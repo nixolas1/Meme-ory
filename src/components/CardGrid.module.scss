@@ -5,9 +5,28 @@
 
     list-style: none;
     padding: 2rem;
-    margin:0;
+    margin: 0 auto;
+    max-width: 700px;
 }
 
-.item {
+.victory {
+    font-size: 10vmax;
+    color: white;
+    font-weight: bold;
+    padding: 5rem;
+    animation: rotate 2s infinite;
+}
 
+.imageLoader{
+    opacity: 0;
+    visibility: hidden;
+    max-width: 0;
+    max-height: 0;
+    overflow: hidden;
+}
+
+@keyframes rotate {
+    0%{ transform: rotate(0deg);}
+    50%{ transform: rotate(180deg);}
+    100%{ transform: rotate(360deg);}
 }

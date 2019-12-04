@@ -4,12 +4,15 @@ import PropTypes from 'prop-types'
 import styles from './CardGrid.module.scss';
 import Card from "../helpers/Card";
 import CardItem from "./CardItem";
+import getImages from '../helpers/getImages';
 
 
 class CardGrid extends React.Component {
     state = {
-        cards: [],
-        allowFlips: true
+        cards: [...Array(this.props.cardCount*2).keys()],
+        allowFlips: true,
+        victory: false,
+        images: []
     }
 
     componentDidMount() {
@@ -22,63 +25,85 @@ class CardGrid extends React.Component {
         }
     }
 
-    initCardPairs = () => {
+    initCardPairs = async () => {
         // create an array of cards, with a cardCount length
-        const cards = Array.from({length: this.props.cardCount}, (id, i) => new Card(i))
-        this.setState({ cards })
-    }
+        const count = this.props.cardCount * 2
+        let cards = []
+        const images = await getImages(count)
 
-    cardClickHandler = (card) => {
-
-        let cards = this.state.cards
-
-        // reset cards flipped state
-        if(!this.state.allowFlips) {
-            flipCards(cards.filter(card => card.flipped), cards)
+        for(let i = 0; i < count; i += 2){
+            const seed = Math.random()
+            const image = images[i]
+            // create two cards with same identity
+            cards.push(new Card(i, seed, image))
+            cards.push(new Card(i + 1, seed, image))
         }
 
+        // hehe
+        shuffle(cards)
+        this.setState({ cards, images })
+    }
 
-        // flip card
-        // todo: no flipping back
-        flipCards([card], cards)
+    cardClickHandler = (card, event) => {
+        // don't allow flips while waiting
+        if(!this.state.allowFlips || card.flipped || card.found || card.id === undefined) return false
 
-        // get flipped cards
-        const [firstCard, secondCard] = cards.filter(card => card.flipped)
+        let cards = this.state.cards
+        flipCards([card])
+        
+        this.checkIfCardMatches(cards)
+        this.setState({cards})
+    }
+
+    checkIfCardMatches = (cards) => {
+        // get two flipped cards
+        const [firstCard, secondCard] = cards.filter(c => c.flipped && !c.found)
 
         // there exists two flipped cards
         if(firstCard && secondCard) {
+
             // they are the same
             if(firstCard.seed === secondCard.seed) {
                 // set as found
-                setCardsAsFound([firstCard, secondCard], cards)
+                setCardsAsFound([firstCard, secondCard])
 
-                // todo give points
+                // todo: give points
 
-                // todo check if game is over
-
+                // check if game is over
+                if(cards.every(c => c.found)) {
+                    this.setState({victory: true})
+                }
             } else {
-                // flip back both after a timeout
+                // not correct card, flip back both after a timeout
                 this.setState({allowFlips: false})
                 setTimeout(() => {
-                    flipCards([firstCard, secondCard], cards)
+                    flipCards([firstCard, secondCard])
                     this.setState({cards, allowFlips: true})
-                }, 1000)
+                }, 700)
             }
         }
-
-        this.setState({cards, allowFlips: true})
     }
 
     render() {
-        const { cards } = this.state
+        const { cards, images, victory } = this.state
+        if(victory) {
+            return (
+                <h1 className={styles.victory}>You Win!</h1>
+            )
+        }
         return (
-            <ul className={styles.root}>
-                {cards.map((card, i) => (
-                    <li className={styles.item} key={i}>
-                        <CardItem card={card} onClick={this.cardClickHandler} />
-                    </li>
-                ))}
-            </ul>
+            <React.Fragment>
+                <ul className={styles.root}>
+                    {cards.map((card, i) => (
+                        <li className={styles.item} key={i}>
+                            <CardItem card={card} clickHandler={this.cardClickHandler} />
+                        </li>
+                    ))}
+                </ul>
+                <div className={styles.imageLoader}>
+                    {images.map(url => <img src={url} alt="Load me" key={url} />)}
+                </div>
+            </React.Fragment>
         );
     }
 }
@@ -87,13 +112,18 @@ CardGrid.propTypes = {
     cardCount: PropTypes.number
 }
 
-const flipCardValue = (prop, cards, array) => cards.forEach(card => {
+const flipCardValue = (prop, cards) => cards.forEach(card => {
     card[prop] = !card[prop]
-    array[card.id] = card
 })
 
-const setCardsAsFound = (cards, array) => flipCardValue("found", cards, array)
-const flipCards = (cards, array) => flipCardValue("flipped", cards, array)
+const setCardsAsFound = (cards, array) => {
+    flipCardValue("found", cards)
+    flipCardValue("flipped", cards)
+}
+const flipCards = (cards) => flipCardValue("flipped", cards)
+
+// sorts array based on random number. Not uniformly random, but good enough
+const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 
 export default CardGrid

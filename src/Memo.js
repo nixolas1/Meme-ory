@@ -5,7 +5,7 @@ import CardGrid from "./components/CardGrid";
 const Memo = () => {
   return (
     <div className={styles.root}>
-      <CardGrid cardCount={10} />
+      <CardGrid cardCount={9} />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 class Card {
-    constructor(id) {
+    constructor(id, seed = Math.random(), image) {
         this.id = id
-        this.seed = Math.random()
-        this.turned = false
+        this.seed = seed
+        this.flipped = false
         this.found = false
+        this.image = image
     }
 
 }
